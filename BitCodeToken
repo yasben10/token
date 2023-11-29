@@ -1,0 +1,41 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
+contract BitCodedToken is ERC20 {
+    uint256 public constant MAX_SUPPLY = 21_000_000 * 10**18;
+    uint256 public constant INITIAL_REWARD = 50 * 10**18;
+
+    uint256 public uniqueMinters;
+    uint256 public halvingInterval;
+
+    mapping(address => bool) public hasMinted;
+
+    constructor(uint256 _halvingInterval) ERC20("BitCodeToken", "BTC") {
+        _mint(address(this), 0); // Mint the initial supply to the contract address (0 initially)
+        uniqueMinters = 0;
+        halvingInterval = _halvingInterval;
+    }
+
+    // Mint new tokens with a reward
+    function mint() external {
+        require(!hasMinted[msg.sender], "Address has already minted its reward");
+
+        uint256 reward = calculateReward();
+        _mint(msg.sender, reward);
+
+        hasMinted[msg.sender] = true;
+        uniqueMinters++;
+    }
+
+    // Function to calculate the reward based on the dynamic halving mechanism
+    function calculateReward() public view returns (uint256) {
+        return INITIAL_REWARD / (2**(uniqueMinters / halvingInterval));
+    }
+
+    // Function to check the current reward for the next minting
+    function getCurrentReward() external view returns (uint256) {
+        return calculateReward();
+    }
+}
